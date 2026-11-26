@@ -7,5 +7,7 @@ test-results/
 playwright-report/
 .env
 .dev.vars
+.cloudflare/
+.wrangler/
 .DS_Store
 worker-configuration.d.ts

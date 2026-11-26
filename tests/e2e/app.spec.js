@@ -26,11 +26,11 @@ test("switches between invalid, offset, and date-only semantics", async ({ page 
 
   await preset.selectOption("offset");
   await expect(page.getByRole("status")).toContainText("one unambiguous instant");
-  await expect(page.getByText("Unix milliseconds", { exact: true })).toBeVisible();
+  await expect(page.getByRole("rowheader", { name: "Unix milliseconds", exact: true })).toBeVisible();
 
   await preset.selectOption("date-only");
   await expect(page.getByRole("status")).toContainText("No time, offset, time zone, or instant");
-  await expect(page.getByRole("group", { name: "Time-zone interpretation" })).toBeDisabled();
+  await expect(page.getByLabel("Source time zone")).toBeDisabled();
 });
 
 test("validates only after analysis and clears the stale result while editing", async ({ page }) => {

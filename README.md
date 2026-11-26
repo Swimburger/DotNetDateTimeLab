@@ -32,7 +32,7 @@ pnpm exec playwright install chromium
 pnpm run test:e2e
 ```
 
-`pnpm run test:e2e` starts the built Cloudflare project on `http://127.0.0.1:8787`.
+`pnpm run test:e2e` starts the built Cloudflare project on `http://127.0.0.1:8791`.
 
 ## Deploy
 
