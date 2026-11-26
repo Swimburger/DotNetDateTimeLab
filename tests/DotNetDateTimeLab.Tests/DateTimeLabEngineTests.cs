@@ -42,6 +42,19 @@ public sealed class DateTimeLabEngineTests
     }
 
     [Fact]
+    public void UtcDateTimeDoesNotGetReinterpretedInTheSelectedSourceZone()
+    {
+        var result = DateTimeLabEngine.Parse(new(
+            "2026-11-26T19:30:00Z", LabValueType.DateTime, "", null,
+            DateTimeStyles.RoundtripKind, "America/New_York", "Europe/Brussels"));
+
+        Assert.True(result.Success);
+        Assert.Contains(result.Inspection, item => item.Label == "Kind" && item.Value == "Utc");
+        Assert.Contains(result.Inspection, item => item.Label == "Source time zone" && item.Value == "Not used");
+        Assert.Contains(result.Conversions, item => item.Label == "UTC" && item.Value.StartsWith("2026-11-26T19:30:00", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void DateOnlyMakesInstantConversionsExplicitlyUnavailable()
     {
         var result = DateTimeLabEngine.Parse(new(

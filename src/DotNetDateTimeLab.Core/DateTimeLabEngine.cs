@@ -87,8 +87,9 @@ public static class DateTimeLabEngine
 
         var value = parsed.Value;
         var wallTime = DateTime.SpecifyKind(value, DateTimeKind.Unspecified);
-        var invalid = sourceZone.IsInvalidTime(wallTime);
-        var ambiguous = sourceZone.IsAmbiguousTime(wallTime);
+        var needsZoneInterpretation = value.Kind == DateTimeKind.Unspecified;
+        var invalid = needsZoneInterpretation && sourceZone.IsInvalidTime(wallTime);
+        var ambiguous = needsZoneInterpretation && sourceZone.IsAmbiguousTime(wallTime);
         var inspection = new List<InspectionItem>
         {
             new("Parsed value", value.ToString("O", CultureInfo.InvariantCulture)),
@@ -96,7 +97,9 @@ public static class DateTimeLabEngine
             new("Ticks", value.Ticks.ToString(CultureInfo.InvariantCulture)),
             new("Round-trip (O)", value.ToString("O", CultureInfo.InvariantCulture)),
             new("Culture used", DisplayCulture(culture)),
-            new("Source time zone", sourceZone.Id)
+            new("Source time zone", needsZoneInterpretation ? sourceZone.Id : "Not used", needsZoneInterpretation
+                ? "Unspecified DateTime values need external time-zone context to identify an instant."
+                : $"The parsed Kind is {value.Kind}, so .NET already defines how to place the value on the UTC timeline.")
         };
 
         var conversions = new List<ConversionItem>();
@@ -120,10 +123,14 @@ public static class DateTimeLabEngine
             AddInstantConversions(conversions, new DateTimeOffset(assumedUtc, TimeSpan.Zero), targetZone,
                 "TimeZoneInfo.ConvertTimeToUtc chooses one offset for an ambiguous wall time; inspect both candidates below.");
         }
-        else
+        else if (needsZoneInterpretation)
         {
             var utc = TimeZoneInfo.ConvertTimeToUtc(wallTime, sourceZone);
             AddInstantConversions(conversions, new DateTimeOffset(utc, TimeSpan.Zero), targetZone);
+        }
+        else
+        {
+            AddInstantConversions(conversions, new DateTimeOffset(value), targetZone);
         }
 
         return new ParseResult
@@ -133,8 +140,12 @@ public static class DateTimeLabEngine
                 ? "Parsed as DateTime, but the selected source-zone wall time is invalid."
                 : ambiguous
                     ? "Parsed as DateTime; this wall time maps to two possible instants."
-                    : "Parsed as DateTime and interpreted in the selected source time zone.",
-            SemanticKind = "Wall-clock date and time. DateTime alone does not retain a full time-zone identity.",
+                    : needsZoneInterpretation
+                        ? "Parsed as DateTime and interpreted in the selected source time zone."
+                        : $"Parsed as DateTime with Kind={value.Kind}; the source-zone selection was not needed.",
+            SemanticKind = needsZoneInterpretation
+                ? "Unspecified wall-clock date and time. DateTime alone does not retain a full time-zone identity."
+                : $"DateTime with Kind={value.Kind}; .NET can place this value on the UTC timeline without a separate source zone.",
             Inspection = inspection,
             Conversions = conversions,
             IsInvalidTime = invalid,
@@ -270,20 +281,22 @@ public static class DateTimeLabEngine
         var styles = {{StylesExpression(request.Styles)}};
         var value = {{ParseExpression("DateTime", request)}};
 
-        // Treat the parsed value as a wall time in the selected source zone.
+        // Only an Unspecified DateTime needs a separate source-zone interpretation.
         var sourceZone = TimeZoneInfo.FindSystemTimeZoneById("{{EscapeString(source.Id)}}");
         var wallTime = DateTime.SpecifyKind(value, DateTimeKind.Unspecified);
 
-        if (sourceZone.IsInvalidTime(wallTime))
+        if (value.Kind == DateTimeKind.Unspecified && sourceZone.IsInvalidTime(wallTime))
             throw new ArgumentException("The wall time does not exist in this time zone.");
 
-        if (sourceZone.IsAmbiguousTime(wallTime))
+        if (value.Kind == DateTimeKind.Unspecified && sourceZone.IsAmbiguousTime(wallTime))
         {
             foreach (var offset in sourceZone.GetAmbiguousTimeOffsets(wallTime))
                 Console.WriteLine(new DateTimeOffset(wallTime, offset).UtcDateTime.ToString("O"));
         }
 
-        var utc = TimeZoneInfo.ConvertTimeToUtc(wallTime, sourceZone);
+        var utc = value.Kind == DateTimeKind.Unspecified
+            ? TimeZoneInfo.ConvertTimeToUtc(wallTime, sourceZone)
+            : value.ToUniversalTime();
         var targetZone = TimeZoneInfo.FindSystemTimeZoneById("{{EscapeString(target.Id)}}");
         var converted = TimeZoneInfo.ConvertTimeFromUtc(utc, targetZone);
         """;
