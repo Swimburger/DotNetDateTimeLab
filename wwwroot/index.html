@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>.NET DateTime Lab</title>
+    <meta name="description" content="Parse, inspect, and convert dates exactly as .NET does. Explore DateTime, DateTimeOffset, DateOnly, TimeOnly, cultures, and time zones in your browser.">
+    <meta property="og:title" content=".NET DateTime Lab">
+    <meta property="og:description" content="See the assumptions hidden inside a timestamp and copy the C# that produced the result.">
+    <meta property="og:url" content="https://datetime.swimburger.net/">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:creator" content="@RealSwimburger">
+    <link rel="canonical" href="https://datetime.swimburger.net/">
+    <base href="/">
+    <link rel="preload" id="webassembly">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="stylesheet" href="css/app.css">
+    <link href="DotNetDateTimeLab.styles.css" rel="stylesheet">
+    <script type="importmap"></script>
+</head>
+<body>
+    <a class="skip-link" href="#lab-heading">Skip to playground</a>
+    <header class="site-header">
+        <div>
+            <h1 id="lab-heading"><span>.NET</span> DateTime Lab</h1>
+            <p>Parse, inspect, and convert dates exactly as .NET does—without opening a scratch project.</p>
+        </div>
+        <nav aria-label="Resources">
+            <a href="https://learn.microsoft.com/dotnet/standard/datetime/">.NET documentation</a>
+            <a href="https://github.com/Swimburger/DotNetDateTimeLab">Source</a>
+        </nav>
+    </header>
+    <div id="app">
+        <div class="initial-loading" role="status">
+            <progress aria-label="Loading the .NET DateTime Lab"></progress>
+            <p>Loading the .NET runtime and time-zone data…</p>
+        </div>
+    </div>
+    <div id="blazor-error-ui" role="alert">
+        The application encountered an unexpected error.
+        <a href="." class="reload">Reload</a>
+        <button type="button" class="dismiss" aria-label="Dismiss error message">×</button>
+    </div>
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-owner">
+                <img src="https://swimburger.net/content/img/burger.svg" width="32" height="18" alt="Swimburger logo">
+                <span>Tool by Niels Swimberghe — <a href="https://swimburger.net">swimburger.net</a> · <a href="https://x.com/RealSwimburger">X</a> · <a href="https://swimburger.net/privacy">Privacy Policy</a></span>
+            </div>
+            <small>Built with .NET 11 and Blazor WebAssembly. Values are processed locally in your browser and are never sent to a server. Results reflect this app’s bundled .NET runtime, ICU, and time-zone data.</small>
+        </div>
+    </footer>
+    <script src="app.js"></script>
+    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+</body>
+</html>
