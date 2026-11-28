@@ -1,10 +1,10 @@
 @page "/"
 @inject IJSRuntime JS
 
-<PageTitle>.NET DateTime Lab</PageTitle>
+<PageTitle>.NET Date and Time Tester</PageTitle>
 
-<main id="main-content" class="lab" aria-labelledby="lab-heading">
-    <section class="workspace-shell" aria-label="Date and time playground">
+<main id="main-content" class="tool" aria-labelledby="lab-heading">
+    <section class="tool-controls" aria-label="Date and time tester">
         <div class="preset-bar">
             <div class="preset-picker">
                 <label for="preset">Try an example</label>
@@ -18,14 +18,10 @@
             <button type="button" class="secondary" @onclick="Reset">Reset</button>
         </div>
 
-        <form class="lab-form" method="get" action="/" aria-labelledby="interpret-heading" @onsubmit="Analyze" @onsubmit:preventDefault>
-            <section class="input-panel" aria-labelledby="interpret-heading">
-                <div class="panel-heading">
-                    <p class="eyebrow">1 · Interpret</p>
-                    <h2 id="interpret-heading">Tell .NET what this value means</h2>
-                </div>
+        <form class="tool-form" method="get" action="/" aria-labelledby="interpret-heading" @onsubmit="Analyze" @onsubmit:preventDefault>
+            <h2 id="interpret-heading">Parse a date or time</h2>
 
-                <div class="field field-wide">
+            <div class="field field-wide">
                     <label for="input-value">Date or time value</label>
                     <p id="input-value-hint" class="hint">Enter the same text your application receives. Parsing runs only in this browser.</p>
                     <input id="input-value" name="value" value="@input" @oninput="UpdateInput"
@@ -36,9 +32,9 @@
                     {
                         <p id="input-value-error" class="field-error">@result.Error</p>
                     }
-                </div>
+            </div>
 
-                <fieldset class="type-options">
+            <fieldset class="type-options">
                     <legend>.NET type</legend>
                     @foreach (var type in Enum.GetValues<LabValueType>())
                     {
@@ -48,76 +44,63 @@
                             <label for="@id">@type</label>
                         </span>
                     }
-                </fieldset>
+            </fieldset>
 
-                <div class="field-grid">
-                    <div class="field">
-                        <label for="culture">Culture</label>
-                        <select id="culture" name="culture" @bind="cultureName">
-                            @foreach (var culture in Cultures)
-                            {
-                                <option value="@culture.Id">@culture.Label</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="field">
-                        <label for="styles">DateTimeStyles preset</label>
-                        <select id="styles" name="styles" @bind="stylesKey">
-                            @foreach (var style in StylePresets)
-                            {
-                                <option value="@style.Id">@style.Label</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="field field-wide">
-                        <label for="exact-format">Exact format <span class="optional">optional</span></label>
-                        <p id="exact-format-hint" class="hint">Leave blank for <code>Parse</code>; provide a format such as <code>yyyy-MM-dd HH:mm</code> for <code>ParseExact</code>.</p>
-                        <input id="exact-format" name="format" @bind="exactFormat" aria-describedby="exact-format-hint"
-                               autocapitalize="none" autocorrect="off" spellcheck="false" />
-                    </div>
-                </div>
-
-                <fieldset class="zone-fields" disabled="@(valueType is LabValueType.DateOnly or LabValueType.TimeOnly)">
-                    <legend>Time-zone interpretation</legend>
+            <details class="options" open>
+                <summary>Parsing options</summary>
+                <div class="options-body">
                     <div class="field-grid">
                         <div class="field">
-                            <label for="source-zone">Source time zone</label>
-                            <p id="source-zone-hint" class="hint">Used to interpret a <code>DateTime</code> as a wall-clock time.</p>
-                            <select id="source-zone" name="source-zone" @bind="sourceZoneId" aria-describedby="source-zone-hint">
-                                @foreach (var zone in Zones)
+                            <label for="culture">Culture</label>
+                            <select id="culture" name="culture" @bind="cultureName">
+                                @foreach (var culture in Cultures)
                                 {
-                                    <option value="@zone.Id">@zone.Label</option>
+                                    <option value="@culture.Id">@culture.Label</option>
                                 }
                             </select>
                         </div>
                         <div class="field">
-                            <label for="target-zone">Convert to time zone</label>
-                            <p id="target-zone-hint" class="hint">Shows the equivalent clock time for the same instant.</p>
-                            <select id="target-zone" name="target-zone" @bind="targetZoneId" aria-describedby="target-zone-hint">
-                                @foreach (var zone in Zones)
+                            <label for="styles">DateTimeStyles</label>
+                            <select id="styles" name="styles" @bind="stylesKey">
+                                @foreach (var style in StylePresets)
                                 {
-                                    <option value="@zone.Id">@zone.Label</option>
+                                    <option value="@style.Id">@style.Label</option>
                                 }
                             </select>
                         </div>
+                        <div class="field field-wide">
+                            <label for="exact-format">Exact format <span class="optional">optional</span></label>
+                            <p id="exact-format-hint" class="hint">Leave blank for <code>Parse</code>; add a pattern for <code>ParseExact</code>.</p>
+                            <input id="exact-format" name="format" @bind="exactFormat" aria-describedby="exact-format-hint"
+                                   autocapitalize="none" autocorrect="off" spellcheck="false" />
+                        </div>
                     </div>
-                </fieldset>
-
-                <button id="analyze-button" type="submit" class="primary">Analyze with .NET</button>
-            </section>
-        </form>
-
-        <section class="results-panel" aria-labelledby="inspect-heading">
-            <div class="panel-heading results-heading">
-                <div>
-                    <p class="eyebrow">2 · Inspect</p>
-                    <h2 id="inspect-heading">See the semantics, not just the string</h2>
+                    <fieldset class="zone-fields" disabled="@(valueType is LabValueType.DateOnly or LabValueType.TimeOnly)">
+                        <legend>Time-zone interpretation</legend>
+                        <div class="field-grid">
+                            <div class="field">
+                                <label for="source-zone">Source time zone</label>
+                                <select id="source-zone" name="source-zone" @bind="sourceZoneId">
+                                    @foreach (var zone in Zones) { <option value="@zone.Id">@zone.Label</option> }
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="target-zone">Convert to time zone</label>
+                                <select id="target-zone" name="target-zone" @bind="targetZoneId">
+                                    @foreach (var zone in Zones) { <option value="@zone.Id">@zone.Label</option> }
+                                </select>
+                            </div>
+                        </div>
+                    </fieldset>
                 </div>
-                @if (result.Success)
-                {
-                    <span class="success-badge">Parsed</span>
-                }
-            </div>
+            </details>
+
+            <button id="analyze-button" type="submit" class="primary">Analyze with .NET</button>
+        </form>
+    </section>
+
+    <section class="results-panel" aria-labelledby="inspect-heading">
+            <h2 id="inspect-heading">Result</h2>
 
             <div id="result-status" class="result-status @(result.Success ? "success" : showError ? "error" : "idle")" role="status" aria-live="polite">
                 @if (result.Success)
@@ -195,33 +178,19 @@
                     </div>
                 </section>
             }
-        </section>
-
-        <section class="code-panel" aria-labelledby="reproduce-heading">
-            <div class="panel-heading code-heading">
-                <div>
-                    <p class="eyebrow">3 · Reproduce</p>
-                    <h2 id="reproduce-heading">Copy the C# behind the result</h2>
-                </div>
-                <button type="button" class="secondary" @onclick="CopyCode">@copyState</button>
-            </div>
-            <pre tabindex="0"><code>@result.GeneratedCode</code></pre>
-        </section>
     </section>
 
-    <section class="reference" aria-labelledby="reference-heading">
-        <p class="eyebrow">Quick reference</p>
-        <h2 id="reference-heading">Choose the type by meaning</h2>
-        <p class="section-intro">Formatting is intentionally secondary here. This lab focuses on parsing, type semantics, time-zone interpretation, and conversion—the behavior that is hardest to reason about from a string alone.</p>
-
-        <div class="reference-grid">
-            <article><h3>DateTimeOffset</h3><p><strong>Default choice for an instant.</strong> Stores a clock value and UTC offset, so it identifies one point on the timeline. It still does not retain a geographic time zone.</p></article>
-            <article><h3>DateTime</h3><p>Use for UTC values, legacy APIs, or abstract wall times. <code>Kind</code> is only <code>Utc</code>, <code>Local</code>, or <code>Unspecified</code>; it is not a zone ID.</p></article>
-            <article><h3>DateOnly</h3><p>Use for birthdays, anniversaries, and business dates. It deliberately carries no time, offset, or time zone and therefore is not an instant.</p></article>
-            <article><h3>TimeOnly</h3><p>Use for a time of day such as opening hours. Pair it with a date and time zone before attempting UTC or Unix conversion.</p></article>
+    <details class="reference code-panel">
+        <summary id="reproduce-heading">C# for this result</summary>
+        <div class="disclosure-body">
+            <button type="button" class="secondary" @onclick="CopyCode">@copyState</button>
+            <pre tabindex="0"><code>@result.GeneratedCode</code></pre>
         </div>
+    </details>
 
-        <div class="reference-table table-scroll">
+    <details class="reference">
+        <summary id="reference-heading">Date and time type reference</summary>
+        <div class="disclosure-body table-scroll">
             <table>
                 <caption>What each .NET date and time type preserves</caption>
                 <thead><tr><th scope="col">Type</th><th scope="col">Date</th><th scope="col">Time</th><th scope="col">Offset</th><th scope="col">Unambiguous instant</th></tr></thead>
@@ -232,18 +201,9 @@
                     <tr><th scope="row"><code>TimeOnly</code></th><td>No</td><td>Yes</td><td>No</td><td>No</td></tr>
                 </tbody>
             </table>
+            <p class="docs-links"><a href="https://learn.microsoft.com/dotnet/standard/datetime/choosing-between-datetime">Choose a .NET date/time type</a> · <a href="https://learn.microsoft.com/dotnet/standard/datetime/time-zone-overview">Time-zone behavior</a> · <a href="https://learn.microsoft.com/dotnet/standard/base-types/parsing-datetime">Parsing documentation</a></p>
         </div>
-
-        <aside class="docs-card" aria-labelledby="docs-heading">
-            <h3 id="docs-heading">Continue with the source documentation</h3>
-            <ul>
-                <li><a href="https://learn.microsoft.com/dotnet/standard/datetime/choosing-between-datetime">Choose between .NET date and time types</a></li>
-                <li><a href="https://learn.microsoft.com/dotnet/standard/datetime/time-zone-overview">Time zones, invalid times, and ambiguous times</a></li>
-                <li><a href="https://learn.microsoft.com/dotnet/standard/base-types/parsing-datetime">Parse date and time strings</a></li>
-                <li><a href="https://learn.microsoft.com/dotnet/standard/base-types/standard-date-and-time-format-strings">Standard date and time formats</a></li>
-            </ul>
-        </aside>
-    </section>
+    </details>
 </main>
 
 @code {

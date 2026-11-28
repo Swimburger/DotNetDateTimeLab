@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 async function openLab(page) {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: ".NET DateTime Lab", exact: true })).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole("heading", { name: ".NET Date and Time Tester", exact: true })).toBeVisible({ timeout: 60_000 });
   await expect(page.getByRole("button", { name: "Analyze with .NET" })).toBeVisible();
 }
 
@@ -13,6 +13,7 @@ test("explains the default ambiguous DST preset with both possible instants", as
   await expect(candidates.getByRole("row")).toHaveCount(3);
   await expect(candidates).toContainText("2026-11-01T05:30:00.0000000Z");
   await expect(candidates).toContainText("2026-11-01T06:30:00.0000000Z");
+  await page.getByText("C# for this result").click();
   await expect(page.getByRole("button", { name: "Copy C#" })).toBeVisible();
 });
 
