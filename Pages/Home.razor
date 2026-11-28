@@ -9,6 +9,7 @@
             <div class="preset-picker">
                 <label for="preset">Try an example</label>
                 <select id="preset" name="preset" value="@selectedPreset" @onchange="SelectPreset">
+                    <option value="" disabled>Custom settings</option>
                     @foreach (var preset in Presets)
                     {
                         <option value="@preset.Id">@preset.Label</option>
@@ -18,7 +19,7 @@
             <button type="button" class="secondary" @onclick="Reset">Reset</button>
         </div>
 
-        <form class="tool-form" method="get" action="/" aria-labelledby="interpret-heading" @onsubmit="Analyze" @onsubmit:preventDefault>
+        <form class="tool-form" method="get" action="/" aria-labelledby="interpret-heading" @onsubmit="Analyze" @onsubmit:preventDefault @onkeydown="HandleShortcut">
             <h2 id="interpret-heading">Parse a date or time</h2>
 
             <div class="field field-wide">
@@ -92,10 +93,21 @@
                             </div>
                         </div>
                     </fieldset>
+                    <p class="docs-links inline-docs"><a href="https://learn.microsoft.com/dotnet/api/system.datetime.parse" target="_blank" rel="noopener">Parse API</a> · <a href="https://learn.microsoft.com/dotnet/standard/base-types/custom-date-and-time-format-strings" target="_blank" rel="noopener">Format strings</a> · <a href="https://learn.microsoft.com/dotnet/api/system.globalization.datetimestyles" target="_blank" rel="noopener">DateTimeStyles</a></p>
                 </div>
             </details>
 
-            <button id="analyze-button" type="submit" class="primary">Analyze with .NET</button>
+            <div class="primary-actions">
+                <button id="analyze-button" type="submit" class="primary">Analyze with .NET</button>
+                <span class="shortcut-hint"><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Enter</kbd></span>
+            </div>
+
+            <div class="session-tools" aria-label="Session tools">
+                <button type="button" class="secondary" @onclick="CopyShareLink">Copy link</button>
+                <span class="remember-option"><input id="remember-state" type="checkbox" checked="@rememberOnDevice" @onchange="ToggleRemember" /><label for="remember-state">Remember on this device</label></span>
+                <button type="button" class="text-button" @onclick="ForgetSavedWork" disabled="@(!rememberOnDevice)">Forget saved work</button>
+            </div>
+            <p class="privacy-note">Remembering is optional and stores the current value in this browser. Shared links put state after <code>#</code>, so it is not sent to the web server.</p>
         </form>
     </section>
 
@@ -122,6 +134,14 @@
 
             @if (result.Success)
             {
+                <section class="parse-explanation" aria-labelledby="parse-explanation-heading">
+                    <div>
+                        <h3 id="parse-explanation-heading">Why parsing succeeded</h3>
+                        <p><code>@result.ParseMethod</code> · @result.ParseExplanation</p>
+                    </div>
+                    <a href="https://learn.microsoft.com/dotnet/standard/base-types/parsing-datetime" target="_blank" rel="noopener">Parsing documentation</a>
+                </section>
+
                 @if (result.IsInvalidTime)
                 {
                     <aside class="callout danger" aria-labelledby="dst-invalid-heading">
@@ -134,7 +154,7 @@
                     <aside class="callout warning" aria-labelledby="dst-ambiguous-heading">
                         <h3 id="dst-ambiguous-heading">This wall time occurs twice</h3>
                         <p>The clock repeats this value when daylight saving ends. Choose a policy or retain the offset so the intended instant remains unambiguous.</p>
-                        <div class="table-scroll">
+                        <div class="table-scroll" tabindex="0" role="region" aria-label="Possible UTC instants">
                             <table>
                                 <caption>Possible UTC instants for this wall time</caption>
                                 <thead><tr><th scope="col">Interpretation</th><th scope="col">UTC result</th><th scope="col">Detail</th></tr></thead>
@@ -164,7 +184,7 @@
 
                 <section class="result-section" aria-labelledby="conversions-heading">
                     <h3 id="conversions-heading">Conversions</h3>
-                    <div class="table-scroll">
+                    <div class="table-scroll" tabindex="0" role="region" aria-label="Equivalent date and time representations">
                         <table>
                             <caption>Equivalent representations produced by .NET</caption>
                             <thead><tr><th scope="col">Representation</th><th scope="col">Value</th><th scope="col">Note</th></tr></thead>
@@ -177,20 +197,24 @@
                         </table>
                     </div>
                 </section>
+
+                <div class="result-actions">
+                    <button type="button" class="secondary" @onclick="CopyResult">Copy result</button>
+                    <button type="button" class="secondary" @onclick="CopyCode">@copyState</button>
+                </div>
             }
     </section>
 
     <details class="reference code-panel">
         <summary id="reproduce-heading">C# for this result</summary>
         <div class="disclosure-body">
-            <button type="button" class="secondary" @onclick="CopyCode">@copyState</button>
             <pre tabindex="0"><code>@result.GeneratedCode</code></pre>
         </div>
     </details>
 
     <details class="reference">
         <summary id="reference-heading">Date and time type reference</summary>
-        <div class="disclosure-body table-scroll">
+        <div class="disclosure-body table-scroll" tabindex="0" role="region" aria-label="Date and time type reference">
             <table>
                 <caption>What each .NET date and time type preserves</caption>
                 <thead><tr><th scope="col">Type</th><th scope="col">Date</th><th scope="col">Time</th><th scope="col">Offset</th><th scope="col">Unambiguous instant</th></tr></thead>
@@ -205,6 +229,8 @@
         </div>
     </details>
 </main>
+
+<p id="action-status" class="action-status" role="status" aria-live="polite">@actionStatus</p>
 
 @code {
     private static readonly Choice[] Cultures =
@@ -234,6 +260,9 @@
     [
         new("dst-overlap", "DST overlap · two possible instants", "2026-11-01 01:30", LabValueType.DateTime, "en-US", "yyyy-MM-dd HH:mm", "None", "America/New_York", "Europe/Brussels"),
         new("dst-gap", "DST gap · nonexistent wall time", "2026-03-08 02:30", LabValueType.DateTime, "en-US", "yyyy-MM-dd HH:mm", "None", "America/New_York", "UTC"),
+        new("ambiguous-culture-us", "04/05 changes meaning · en-US", "04/05/2026 09:00", LabValueType.DateTime, "en-US", "", "None", "America/New_York", "UTC"),
+        new("ambiguous-culture-gb", "04/05 changes meaning · en-GB", "04/05/2026 09:00", LabValueType.DateTime, "en-GB", "", "None", "Europe/London", "UTC"),
+        new("assume-universal", "No offset · AssumeUniversal changes Kind", "2026-11-26 14:30", LabValueType.DateTime, "", "yyyy-MM-dd HH:mm", "AssumeUniversalAdjust", "UTC", "America/New_York"),
         new("offset", "Offset timestamp · one instant", "2026-11-26T14:30:00-05:00", LabValueType.DateTimeOffset, "", "", "RoundtripKind", "America/New_York", "Europe/Brussels"),
         new("culture", "Culture-sensitive date", "31/12/2026 23:45", LabValueType.DateTime, "fr-FR", "", "None", "Europe/Brussels", "America/New_York"),
         new("date-only", "Birthday · DateOnly", "1988-06-12", LabValueType.DateOnly, "", "yyyy-MM-dd", "None", "UTC", "UTC"),
@@ -251,10 +280,52 @@
     private bool attempted;
     private ParseResult result = new() { GeneratedCode = "// Analyze a value to generate the equivalent C#." };
     private string copyState = "Copy C#";
+    private string actionStatus = string.Empty;
+    private bool rememberOnDevice;
+    private int announcementSequence;
     private bool showError => attempted && !result.Success;
 
     protected override void OnInitialized() => RunAnalysis();
-    private void Analyze() { attempted = true; RunAnalysis(); }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        try
+        {
+            var initial = await JS.InvokeAsync<InitialState>("dateTimeLab.getInitialState");
+            rememberOnDevice = initial.Remembered;
+            if (!string.IsNullOrWhiteSpace(initial.State))
+            {
+                var state = System.Text.Json.JsonSerializer.Deserialize<SessionState>(initial.State);
+                if (state is not null && ApplyState(state))
+                {
+                    attempted = true;
+                    RunAnalysis();
+                    Announce(initial.Source == "link" ? "Loaded settings from the shared link." : "Restored remembered work from this device.");
+                }
+                else
+                {
+                    Announce("The saved state was invalid, so the default example was used.");
+                }
+            }
+        }
+        catch (Exception exception) when (exception is JSException or System.Text.Json.JsonException)
+        {
+            Announce("The saved state could not be loaded, so the default example was used.");
+        }
+        StateHasChanged();
+    }
+
+    private async Task Analyze()
+    {
+        attempted = true;
+        RunAnalysis();
+        await SaveRememberedState();
+    }
+
+    private async Task HandleShortcut(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter" && (args.CtrlKey || args.MetaKey)) await Analyze();
+    }
 
     private void RunAnalysis()
     {
@@ -274,13 +345,22 @@
         valueType = type; attempted = false; result = new() { GeneratedCode = "// Analyze the selected type to generate C#." };
     }
 
-    private void SelectPreset(ChangeEventArgs args)
+    private async Task SelectPreset(ChangeEventArgs args)
     {
         selectedPreset = args.Value?.ToString() ?? Presets[0].Id;
         ApplyPreset(Presets.First(item => item.Id == selectedPreset));
+        await SaveRememberedState();
     }
 
-    private void Reset() { selectedPreset = Presets[0].Id; ApplyPreset(Presets[0]); }
+    private async Task Reset()
+    {
+        selectedPreset = Presets[0].Id;
+        ApplyPreset(Presets[0]);
+        try { await JS.InvokeVoidAsync("dateTimeLab.clearShareState"); }
+        catch (JSException) { }
+        if (rememberOnDevice) await SaveRememberedState();
+        Announce("Reset to the default DST overlap example.");
+    }
 
     private void ApplyPreset(Preset preset)
     {
@@ -294,14 +374,106 @@
         {
             var copied = await JS.InvokeAsync<bool>("dateTimeLab.copyText", result.GeneratedCode);
             copyState = copied ? "Copied" : "Copy failed";
+            Announce(copied ? "Copied C#." : "Copy failed.");
         }
         catch (JSException)
         {
             copyState = "Copy failed";
+            Announce("Copy failed.");
         }
+    }
+
+    private async Task CopyResult()
+    {
+        var lines = new List<string> { result.Summary, result.SemanticKind, $"Method: {result.ParseMethod}", result.ParseExplanation };
+        lines.AddRange(result.Inspection.Select(item => $"{item.Label}: {item.Value}{(string.IsNullOrWhiteSpace(item.Note) ? "" : $" — {item.Note}")}"));
+        lines.AddRange(result.Conversions.Select(item => $"{item.Label}: {item.Value}{(string.IsNullOrWhiteSpace(item.Note) ? "" : $" — {item.Note}")}"));
+        try
+        {
+            var copied = await JS.InvokeAsync<bool>("dateTimeLab.copyText", string.Join(Environment.NewLine, lines));
+            Announce(copied ? "Copied result." : "Copy result failed.");
+        }
+        catch (JSException) { Announce("Copy result failed."); }
+    }
+
+    private async Task CopyShareLink()
+    {
+        try
+        {
+            var status = await JS.InvokeAsync<string>("dateTimeLab.copyShareLink", SerializeState());
+            Announce(status switch
+            {
+                "copied" => "Copied a private-by-default share link. Its state is stored after the URL hash.",
+                "too-large" => "This state is too large to fit safely in a share link.",
+                _ => "Copy link failed. Check clipboard permission and try again."
+            });
+        }
+        catch (JSException) { Announce("Copy link failed. Check clipboard permission and try again."); }
+    }
+
+    private async Task ToggleRemember(ChangeEventArgs args)
+    {
+        rememberOnDevice = args.Value is true || string.Equals(args.Value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
+        bool saved;
+        try { saved = await JS.InvokeAsync<bool>("dateTimeLab.setRememberedState", rememberOnDevice, SerializeState()); }
+        catch (JSException) { saved = false; }
+        if (!saved) rememberOnDevice = false;
+        Announce(saved
+            ? rememberOnDevice ? "This browser will remember the last analyzed value." : "Remembering is off and saved work was removed."
+            : "Browser storage is unavailable; remembering remains off.");
+    }
+
+    private async Task ForgetSavedWork()
+    {
+        bool forgotten;
+        try { forgotten = await JS.InvokeAsync<bool>("dateTimeLab.forgetRememberedState"); }
+        catch (JSException) { forgotten = false; }
+        if (forgotten) rememberOnDevice = false;
+        Announce(forgotten ? "Forgot saved work on this device." : "Saved work could not be removed.");
+    }
+
+    private async Task SaveRememberedState()
+    {
+        if (!rememberOnDevice) return;
+        try { await JS.InvokeVoidAsync("dateTimeLab.saveRememberedState", SerializeState()); }
+        catch (JSException) { Announce("The analyzed value could not be saved on this device."); }
+    }
+
+    private string SerializeState() => System.Text.Json.JsonSerializer.Serialize(new SessionState(
+        1, input, valueType, cultureName, exactFormat, stylesKey, sourceZoneId, targetZoneId));
+
+    private bool ApplyState(SessionState state)
+    {
+        if (state.Version != 1 || state.Input is null || state.Input.Length > 10_000 ||
+            !Enum.IsDefined(state.ValueType) || !Cultures.Any(item => item.Id == state.Culture) ||
+            !StylePresets.Any(item => item.Id == state.Styles) || !Zones.Any(item => item.Id == state.SourceZone) ||
+            !Zones.Any(item => item.Id == state.TargetZone) || (state.Format?.Length ?? 0) > 500) return false;
+
+        input = state.Input;
+        valueType = state.ValueType;
+        cultureName = state.Culture;
+        exactFormat = state.Format ?? string.Empty;
+        stylesKey = state.Styles;
+        sourceZoneId = state.SourceZone;
+        targetZoneId = state.TargetZone;
+        selectedPreset = Presets.FirstOrDefault(preset => preset.Input == input && preset.Type == valueType)?.Id ?? string.Empty;
+        return true;
+    }
+
+    private void Announce(string message)
+    {
+        announcementSequence++;
+        actionStatus = announcementSequence % 2 == 0 ? message + "\u00A0" : message;
     }
 
     private sealed record Choice(string Id, string Label);
     private sealed record StyleChoice(string Id, string Label, DateTimeStyles Styles);
     private sealed record Preset(string Id, string Label, string Input, LabValueType Type, string Culture, string Format, string Styles, string SourceZone, string TargetZone);
+    private sealed record SessionState(int Version, string Input, LabValueType ValueType, string Culture, string? Format, string Styles, string SourceZone, string TargetZone);
+    private sealed class InitialState
+    {
+        public string? State { get; set; }
+        public bool Remembered { get; set; }
+        public string Source { get; set; } = "default";
+    }
 }

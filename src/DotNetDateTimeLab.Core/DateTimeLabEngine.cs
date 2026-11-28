@@ -28,6 +28,8 @@ public sealed record ParseResult
     public string Error { get; init; } = string.Empty;
     public string Summary { get; init; } = string.Empty;
     public string SemanticKind { get; init; } = string.Empty;
+    public string ParseMethod { get; init; } = string.Empty;
+    public string ParseExplanation { get; init; } = string.Empty;
     public IReadOnlyList<InspectionItem> Inspection { get; init; } = [];
     public IReadOnlyList<ConversionItem> Conversions { get; init; } = [];
     public bool IsInvalidTime { get; init; }
@@ -146,6 +148,8 @@ public static class DateTimeLabEngine
             SemanticKind = needsZoneInterpretation
                 ? "Unspecified wall-clock date and time. DateTime alone does not retain a full time-zone identity."
                 : $"DateTime with Kind={value.Kind}; .NET can place this value on the UTC timeline without a separate source zone.",
+            ParseMethod = ParseMethod("DateTime", request),
+            ParseExplanation = ParseExplanation("DateTime", request, culture),
             Inspection = inspection,
             Conversions = conversions,
             IsInvalidTime = invalid,
@@ -184,6 +188,8 @@ public static class DateTimeLabEngine
             Success = true,
             Summary = "Parsed as DateTimeOffset: one unambiguous instant with its original offset.",
             SemanticKind = "Instant plus UTC offset. The offset does not identify a time zone or its daylight-saving rules.",
+            ParseMethod = ParseMethod("DateTimeOffset", request),
+            ParseExplanation = ParseExplanation("DateTimeOffset", request, culture),
             Inspection = inspection,
             Conversions = conversions,
             GeneratedCode = GenerateOffsetCode(request, culture, targetZone)
@@ -205,6 +211,8 @@ public static class DateTimeLabEngine
             Success = true,
             Summary = "Parsed as DateOnly. No time, offset, time zone, or instant is implied.",
             SemanticKind = "Calendar date only—appropriate for birthdays, anniversaries, and business dates.",
+            ParseMethod = ParseMethod("DateOnly", request),
+            ParseExplanation = ParseExplanation("DateOnly", request, culture),
             Inspection =
             [
                 new("Parsed value", value.ToString("O", CultureInfo.InvariantCulture)),
@@ -233,6 +241,8 @@ public static class DateTimeLabEngine
             Success = true,
             Summary = "Parsed as TimeOnly. No date, offset, time zone, or instant is implied.",
             SemanticKind = "Time of day only—appropriate for recurring opening times and schedules.",
+            ParseMethod = ParseMethod("TimeOnly", request),
+            ParseExplanation = ParseExplanation("TimeOnly", request, culture),
             Inspection =
             [
                 new("Parsed value", value.ToString("O", CultureInfo.InvariantCulture)),
@@ -258,6 +268,10 @@ public static class DateTimeLabEngine
     }
 
     private static bool HasExactFormat(ParseRequest request) => !string.IsNullOrWhiteSpace(request.ExactFormat);
+    private static string ParseMethod(string typeName, ParseRequest request) => $"{typeName}.{(HasExactFormat(request) ? "ParseExact" : "Parse")}";
+    private static string ParseExplanation(string typeName, ParseRequest request, CultureInfo culture) => HasExactFormat(request)
+        ? $"{typeName}.ParseExact accepted the value because it matched “{request.ExactFormat}” using {DisplayCulture(culture)} and {FormatStyles(request.Styles)}."
+        : $"{typeName}.Parse accepted the value using {DisplayCulture(culture)} and {FormatStyles(request.Styles)}. Parse does not reveal which culture pattern matched; provide an exact format when acceptance must be deterministic.";
     private static string DisplayCulture(CultureInfo culture) => culture.Equals(CultureInfo.InvariantCulture) ? "Invariant culture" : $"{culture.Name} — {culture.DisplayName}";
     private static string FormatOffset(TimeSpan offset) => $"{(offset < TimeSpan.Zero ? "-" : "+")}{offset.Duration():hh\\:mm}";
     private static TimeZoneInfo FindZone(string id) => id == "__local" ? TimeZoneInfo.Local : TimeZoneInfo.FindSystemTimeZoneById(id);

@@ -55,6 +55,17 @@ input[aria-invalid="true"] { border-color: var(--danger); border-width: 2px; }
 .options summary, .reference summary { min-height: 48px; box-sizing: border-box; padding-block: .75rem; color: var(--link); font-weight: 700; cursor: pointer; }
 .options-body, .disclosure-body { padding-block: .35rem 1rem; }
 .tool-form > .primary { min-width: 12rem; }
+.primary-actions, .session-tools, .result-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+.primary-actions { margin-block-start: .25rem; }
+.shortcut-hint { color: var(--muted); font-size: .78rem; }
+kbd { border: 1px solid var(--border); border-radius: .25rem; padding: .08rem .3rem; background: var(--surface); font: .75rem ui-monospace, monospace; }
+.session-tools { margin-block-start: .8rem; border-block-start: 1px solid var(--border); padding-block-start: .8rem; }
+.remember-option { display: inline-flex; align-items: center; min-height: 44px; gap: .4rem; }
+.remember-option input { min-height: 1.2rem; inline-size: 1.2rem; margin: 0; padding: 0; }
+.remember-option label { padding-block: .55rem; }
+.text-button { min-height: 36px; border-color: transparent; padding-inline: .25rem; background: transparent; color: var(--link); text-decoration: underline; text-underline-offset: .18em; }
+.privacy-note { max-width: 48rem; margin: .45rem 0 0; color: var(--muted); font-size: .76rem; }
+.inline-docs { font-size: .82rem; }
 .results-panel { padding-block: 1.5rem; border-bottom: 1px solid var(--border); }
 .result-status { display: grid; gap: .15rem; border-inline-start: 4px solid var(--border); padding: .7rem .8rem; background: var(--surface); }
 .result-status span { color: var(--muted); font-size: .86rem; }
@@ -66,6 +77,11 @@ input[aria-invalid="true"] { border-color: var(--danger); border-width: 2px; }
 .callout.danger { color: var(--danger); }
 .callout.warning { color: var(--warning); }
 .callout table { color: var(--text); }
+.parse-explanation { display: flex; justify-content: space-between; gap: 1rem; margin-block: 1rem; border-block: 1px solid var(--border); padding-block: .75rem; }
+.parse-explanation h3, .parse-explanation p { margin: 0; }
+.parse-explanation h3 { font-size: 1rem; }
+.parse-explanation p { margin-block-start: .25rem; color: var(--muted); font-size: .86rem; }
+.parse-explanation > a { flex: none; align-self: start; font-size: .82rem; }
 .result-section { margin-block-start: 1.25rem; }
 .result-section h3 { margin: 0 0 .5rem; font-size: 1rem; }
 .inspection-list { display: grid; margin: 0; border-top: 1px solid var(--border); }
@@ -83,6 +99,9 @@ tbody th { white-space: nowrap; }
 .code-panel .secondary { margin-block-end: .65rem; }
 .code-panel pre { max-height: 24rem; margin: 0; overflow: auto; border: 1px solid var(--border); padding: .9rem; background: #0d1117; color: #e6edf3; font-size: .84rem; }
 .docs-links { margin: 1rem 0 0; color: var(--muted); }
+.result-actions { margin-block-start: 1rem; }
+.action-status { position: fixed; inset: auto 1rem 1rem auto; z-index: 30; max-width: min(24rem, calc(100% - 2rem)); margin: 0; border: 1px solid var(--border); border-radius: .375rem; padding: .55rem .75rem; background: var(--surface); box-shadow: 0 .4rem 1.2rem rgb(0 0 0 / 30%); color: var(--text); font-size: .84rem; }
+.action-status:empty { display: none; }
 .initial-loading { margin: auto; padding: 4rem 1rem; color: var(--muted); text-align: center; }
 .site-footer { margin-top: auto; background: var(--brand-gradient); }
 .footer-inner { display: flex; align-items: center; gap: 1.5rem; padding-block: 1rem; font-size: .82rem; }
@@ -100,6 +119,8 @@ tbody th { white-space: nowrap; }
     .inspection-list > div { grid-template-columns: 1fr; gap: .1rem; }
     .footer-inner { align-items: flex-start; flex-direction: column; gap: .6rem; }
     .footer-inner small { margin: 0; text-align: start; }
+    .primary-actions, .session-tools, .result-actions, .parse-explanation { align-items: stretch; flex-direction: column; }
+    .primary-actions button, .session-tools button, .result-actions button { width: 100%; }
 }
 @media (pointer: coarse) { button, input, select { min-height: 48px; } }
 @media (forced-colors: active) {

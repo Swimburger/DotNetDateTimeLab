@@ -76,6 +76,30 @@ public sealed class DateTimeLabEngineTests
         Assert.Contains("en-US", result.Error);
     }
 
+    [Fact]
+    public void ExactParsingNamesTheMethodFormatCultureAndStyles()
+    {
+        var result = DateTimeLabEngine.Parse(new(
+            "2026-11-26 14:30", LabValueType.DateTime, "en-GB", "yyyy-MM-dd HH:mm",
+            DateTimeStyles.AllowWhiteSpaces, "Europe/London", "UTC"));
+
+        Assert.True(result.Success);
+        Assert.Equal("DateTime.ParseExact", result.ParseMethod);
+        Assert.Contains("yyyy-MM-dd HH:mm", result.ParseExplanation);
+        Assert.Contains("en-GB", result.ParseExplanation);
+        Assert.Contains("AllowLeadingWhite", result.ParseExplanation);
+    }
+
+    [Fact]
+    public void FlexibleParsingDoesNotPretendToKnowTheMatchedCulturePattern()
+    {
+        var result = Parse("04/05/2026 09:00", LabValueType.DateTime, null, "America/New_York");
+
+        Assert.True(result.Success);
+        Assert.Equal("DateTime.Parse", result.ParseMethod);
+        Assert.Contains("does not reveal which culture pattern matched", result.ParseExplanation);
+    }
+
     private static ParseResult Parse(string input, LabValueType type, string? format, string sourceZone) =>
         DateTimeLabEngine.Parse(new(input, type, "en-US", format, DateTimeStyles.None, sourceZone, "UTC"));
 }
