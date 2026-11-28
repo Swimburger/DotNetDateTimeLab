@@ -4,6 +4,8 @@ async function openLab(page) {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: ".NET Date and Time Tester", exact: true })).toBeVisible({ timeout: 60_000 });
   await expect(page.getByRole("button", { name: "Analyze with .NET" })).toBeVisible();
+  await expect(page.locator("details.options")).not.toHaveAttribute("open", "");
+  await expect(page.getByRole("heading", { name: ".NET Date and Time Tester" })).toHaveCSS("outline-style", "none");
 }
 
 test("explains the default ambiguous DST preset with both possible instants", async ({ page }) => {
